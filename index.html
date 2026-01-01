@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QiblaTime BASIC</title>
+
+<style>
+:root{
+  --bg:#000;
+  --panel:#064e3b;
+  --accent:#22c55e;
+  --text:#ffffff;
+  --yellow:#facc15;
+}
+
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+
+body{
+  margin:0;
+  width:100vw;
+  height:100vh;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 20px;
+  background:#022c22;
+}
+.masjid{font-size:26px;font-weight:bold}
+#date{font-size:14px;color:#a7f3d0}
+.clock{font-size:42px;color:var(--accent)}
+
+/* MAIN */
+.main{flex:1;display:flex}
+
+/* BACKGROUND */
+.bg{
+  flex:2;
+  position:relative;
+  background:center/cover no-repeat;
+}
+.bg video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:none;
+}
+
+/* SHOLAT */
+.sholat{
+  flex:1;
+  background:#0b4f6c;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:4px; /* rapat */
+}
+.item{
+  height:52px;                 /* tinggi seragam */
+  padding:0 14px;
+  border-radius:4px;
+  background:#1e6f8c;          /* biru kehijauan */
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:26px;
+  font-weight:600;
+  line-height:1;
+}
+.active{
+  background:#7dd3fc;  /* terang seperti di foto */
+  color:#003344;
+  font-weight:700;
+}
+.countdown{
+  margin-top:auto;
+  text-align:center;
+  font-size:30px;
+  color:var(--yellow);
+}
+
+/* FOOTER */
+.footer{
+  background:#022c22;
+  text-align:center;
+  padding:8px;
+  font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div>
+    <div class="masjid" id="masjid"></div>
+    <div id="date"></div>
+  </div>
+  <div class="clock" id="clock">00:00:00</div>
+</div>
+
+<div class="main">
+  <div class="bg" id="bg">
+    <video id="bgVideo" muted autoplay loop playsinline></video>
+  </div>
+  <div class="sholat" id="listSholat"></div>
+</div>
+
+<div class="footer" id="running"></div>
+
+<script>
+/* DATA ADMIN */
+const data = JSON.parse(localStorage.getItem("qibla_data")) || {
+  masjid:"MASJID",
+  running:"Mohon Matikan HP | Harap Tenang",
+  video:"",
+  jadwal:{
+    Subuh:"04:24",
+    Dzuhur:"12:02",
+    Ashar:"15:30",
+    Maghrib:"18:15",
+    Isya:"19:32"
+  }
+};
+
+masjid.innerText = data.masjid;
+running.innerText = data.running;
+
+/* BACKGROUND FOTO */
+const images = ["bg1.jpg","bg2.jpg","bg3.jpg"];
+let imgIndex = 0;
+const bg = document.getElementById("bg");
+
+function slideBG(){
+  bg.style.backgroundImage = `url(${images[imgIndex]})`;
+  imgIndex = (imgIndex + 1) % images.length;
+}
+
+/* VIDEO */
+const video = document.getElementById("bgVideo");
+
+if(data.video && data.video.trim() !== ""){
+  video.src = data.video;
+  video.style.display = "block";
+  video.play().catch(()=>{});
+}else{
+  slideBG();
+  setInterval(slideBG,15000);
+}
+
+/* JADWAL SHOLAT */
+const sholatTimes = Object.keys(data.jadwal).map(k=>({
+  name:k,time:data.jadwal[k]
+}));
+
+const list = document.getElementById("listSholat");
+sholatTimes.forEach(s=>{
+  const d=document.createElement("div");
+  d.className="item";
+  d.id=s.name;
+  d.innerHTML=`<span>${s.name}</span><span>${s.time}</span>`;
+  list.appendChild(d);
+});
+
+const cd=document.createElement("div");
+cd.className="countdown";
+cd.id="countdown";
+list.appendChild(cd);
+
+/* JAM & TANGGAL */
+function updateClock(){
+  const now=new Date();
+  clock.innerText=now.toLocaleTimeString("id-ID",{hour12:false});
+  const hari=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const bulan=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  date.innerText = `${hari[now.getDay()]}, ${now.getDate()} ${bulan[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+/* SHOLAT BERIKUTNYA */
+function nextSholat(){
+  const now=new Date();
+  for(let s of sholatTimes){
+    const [h,m]=s.time.split(":");
+    const t=new Date();
+    t.setHours(h,m,0,0);
+    if(t>now) return {name:s.name,time:t};
+  }
+  const [h,m]=sholatTimes[0].time.split(":");
+  const t=new Date();
+  t.setDate(t.getDate()+1);
+  t.setHours(h,m,0,0);
+  return {name:"Subuh",time:t};
+}
+
+/* COUNTDOWN */
+function updateCountdown(){
+  document.querySelectorAll(".item").forEach(i=>i.classList.remove("active"));
+  const next=nextSholat();
+  document.getElementById(next.name).classList.add("active");
+  const diff=Math.max(0,Math.floor((next.time-new Date())/1000));
+  const h=String(Math.floor(diff/3600)).padStart(2,"0");
+  const m=String(Math.floor((diff%3600)/60)).padStart(2,"0");
+  const s=String(diff%60).padStart(2,"0");
+  countdown.innerText=`Menuju ${next.name} : ${h}:${m}:${s}`;
+}
+
+setInterval(()=>{updateClock();updateCountdown();},1000);
+updateClock();updateCountdown();
+</script>
+
+</body>
+</html>
