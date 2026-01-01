@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QiblaTime ADMIN</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#022c22;
+  color:white;
+}
+.container{
+  max-width:720px;
+  margin:auto;
+  padding:20px;
+}
+h1{text-align:center;color:#22c55e}
+.section{
+  background:#064e3b;
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:15px;
+}
+label{display:block;margin-top:10px;font-size:14px}
+input,textarea{
+  width:100%;
+  padding:9px;
+  margin-top:4px;
+  border-radius:8px;
+  border:none;
+  font-size:15px;
+}
+textarea{resize:vertical}
+button{
+  margin-top:15px;
+  padding:14px;
+  width:100%;
+  border:none;
+  border-radius:10px;
+  background:#22c55e;
+  color:black;
+  font-size:16px;
+  font-weight:bold;
+}
+.small{font-size:13px;color:#bbf7d0;margin-top:6px}
+video{
+  width:100%;
+  margin-top:10px;
+  border-radius:10px;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>QiblaTime ADMIN</h1>
+
+<div class="section">
+  <h3>Identitas Masjid</h3>
+  <label>Nama Masjid</label>
+  <input id="masjid">
+  <label>Running Text</label>
+  <textarea id="running"></textarea>
+</div>
+
+<div class="section">
+  <h3>Jadwal Sholat</h3>
+  <label>Subuh</label><input id="Subuh" type="time">
+  <label>Dzuhur</label><input id="Dzuhur" type="time">
+  <label>Ashar</label><input id="Ashar" type="time">
+  <label>Maghrib</label><input id="Maghrib" type="time">
+  <label>Isya</label><input id="Isya" type="time">
+</div>
+
+<div class="section">
+  <h3>Video Background</h3>
+
+  <label>Link Video (MP4)</label>
+  <input id="videoUrl" placeholder="contoh: video.mp4 atau https://...">
+
+  <video id="preview" muted autoplay loop controls></video>
+
+  <div class="small">
+    Video MP4 lokal / online. Disarankan lokal.
+  </div>
+</div>
+
+<button type="button" id="btnSave">💾 SIMPAN</button>
+
+<p class="small" style="text-align:center">
+Index otomatis membaca data ini
+</p>
+
+</div>
+
+<script>
+const key = "qibla_data";
+
+const defaultData = {
+  masjid:"MASJID AL-HIDAYAH",
+  running:"Mohon Matikan HP | Harap Tenang",
+  video:"",
+  jadwal:{
+    Subuh:"04:30",
+    Dzuhur:"12:00",
+    Ashar:"15:15",
+    Maghrib:"18:00",
+    Isya:"19:15"
+  }
+};
+
+let data = JSON.parse(localStorage.getItem(key)) || defaultData;
+
+/* LOAD */
+masjid.value = data.masjid;
+running.value = data.running;
+videoUrl.value = data.video || "";
+
+for(let s in data.jadwal){
+  document.getElementById(s).value = data.jadwal[s];
+}
+
+if(data.video){
+  preview.src = data.video;
+  preview.style.display = "block";
+}
+
+/* PREVIEW VIDEO */
+videoUrl.addEventListener("input",()=>{
+  const v = videoUrl.value.trim();
+  if(v){
+    preview.src = v;
+    preview.style.display = "block";
+  }else{
+    preview.style.display = "none";
+  }
+});
+
+/* SAVE */
+btnSave.onclick = ()=>{
+  data.masjid = masjid.value;
+  data.running = running.value;
+  data.video = videoUrl.value.trim();
+
+  for(let s in data.jadwal){
+    data.jadwal[s] = document.getElementById(s).value;
+  }
+
+  localStorage.setItem(key, JSON.stringify(data));
+  alert("✅ Berhasil disimpan");
+};
+</script>
+
+</body>
+</html>
